@@ -1,6 +1,5 @@
 # Imports
-#import gym, gym_walk
-#import numpy as np
+import copy
 
 # Clear console
 print("\033[H\033[J")
@@ -161,147 +160,154 @@ def P_BSW():
         },
     }
 
-"""
---------- Frozel Lake (FL) -----------
 
-States : 0, 1, 2, ..., 15
+"""
+--------- Frozel Lake (FL) custom -----------
+
+States : (1,1), (1,2), ..., (4,3), (4,4)
 
 ---------------------
-|   0|   1|   2|   3|
+| 1,1| 1,2| 1,3| 1,4|
 | S  |    |    |    |   S : start
 ---------------------
-|   4|   5|   6|   7|
+| 2,1| 2,2| 2,3| 2,4|
 |    | H  |    | H  |   H : hole
 ---------------------
-|   8|   9|  10|  11|
+| 3,1| 3,2| 3,3| 3,4|
 |    |    |    | H  |
 ---------------------
-|  12|  13|  14|  15|
+| 4,1| 4,2| 4,3| 4,4|
 | H  |    |    | G  |   G : goal
 ---------------------
 
 
-Actions: 0, 1, 2, 3 
+Actions: Up, Down, Left, Right
         
         Up
          ^
          |
-         0
          |
-<--2---Agent---3-->     (Stochastic)
-Left     |   Right
-         1
+<------Agent------>     (Stochastic)
+Left     |    Right
          |
          v
         Down
 
 """
-def P_FL():
-    """
-    Descr
-        Returns the Frozel Lake MDP (pg. 46, 61) as a Python dictionary
-    """
-    return {
-        # Corner
-        0 : {
-            0 : [(2./3., 0, 0.0, False), (1./3., 1, 0.0, False)],
-            1 : [(1./3., 4, 0.0, False), (1./3., 0, 0.0, False), (1./3., 1, 0.0, False)],
-            2 : [(2./3., 0, 0.0, False), (1./3., 4, 0.0, False)],
-            3 : [(1./3., 1, 0.0, False), (1./3., 0, 0.0, False), (1./3., 4, 0.0, False)],
+def P_FL_custom():
+    
+    # Generate action list
+    action_list = ["up", "down", "left", "right"]
+    action_result = {
+        "up"    : (-1, 0),
+        "down"  : ( 1, 0),
+        "left"  : ( 0,-1),
+        "right" : ( 0, 1),
+        "stay"  : ( 0, 0),
+        }
+    action_stochasticity = {
+        "up" : {
+            action_result["stay"]   : 0.,
+            action_result["up"]     : 1./3.,
+            action_result["left"]   : 1./3.,
+            action_result["right"]  : 1./3.,
             },
-        1 : {
-            0 : [],
-            1 : [],
-            2 : [],
-            3 : [],
+        "down" : {
+            action_result["stay"]   : 0.,
+            action_result["down"]   : 1./3.,
+            action_result["left"]   : 1./3.,
+            action_result["right"]  : 1./3.,
             },
-        2 : {
-            0 : [],
-            1 : [],
-            2 : [],
-            3 : [],
+        "left" : {
+            action_result["stay"]   : 0.,
+            action_result["left"]   : 1./3.,
+            action_result["up"]     : 1./3.,
+            action_result["down"]   : 1./3.,
             },
-        # Corner
-        3 : {
-            0 : [(2./3., 3, 0.0, False), (1./3., 2, 0.0, False)],
-            1 : [(1./3., 7, 0.0,  True), (1./3., 3, 0.0, False), (1./3., 2, 0.0, False)],
-            2 : [(1./3., 2, 0.0, False), (1./3., 3, 0.0, False), (1./3., 7, 0.0,  True)],
-            3 : [(2./3., 3, 0.0, False), (1./3., 7, 0.0,  True)],
-            },
-        4 : {
-            0 : [],
-            1 : [],
-            2 : [],
-            3 : [],
-            },
-        5 : {
-            0 : [],
-            1 : [],
-            2 : [],
-            3 : [],
-            },
-        6 : {
-            0 : [],
-            1 : [],
-            2 : [],
-            3 : [],
-            },
-        7 : {
-            0 : [],
-            1 : [],
-            2 : [],
-            3 : [],
-            },
-        8 : {
-            0 : [],
-            1 : [],
-            2 : [],
-            3 : [],
-            },
-        9 : {
-            0 : [],
-            1 : [],
-            2 : [],
-            3 : [],
-            },
-        10 : {
-            0 : [],
-            1 : [],
-            2 : [],
-            3 : [],
-            },
-        11 : {
-            0 : [],
-            1 : [],
-            2 : [],
-            3 : [],
-            },
-        12 : {
-            0 : [],
-            1 : [],
-            2 : [],
-            3 : [],
-            },
-        13 : {
-            0 : [],
-            1 : [],
-            2 : [],
-            3 : [],
-            },
-        14 : {
-            0 : [],
-            1 : [],
-            2 : [],
-            3 : [],
-            },
-        15 : {
-            0 : [],
-            1 : [],
-            2 : [],
-            3 : [],
+        "right" : {
+            action_result["stay"]   : 0.,
+            action_result["right"]  : 1./3.,
+            action_result["up"]     : 1./3.,
+            action_result["down"]   : 1./3.,
             },
         }
+    
+    # Generate base action dictionary
+    base_dist_dict = {}
+    for action in action_list:
+        base_dist_dict[action] = []
+    
+    # Initialize state space characteristic dict
+    state_characteristics = {
+        (1,1) : "Start",
+        (2,2) : "Hole",
+        (2,4) : "Hole",
+        (3,4) : "Hole",
+        (4,1) : "Hole",
+        (4,4) : "Goal",
+        }
+    
+    # Initialize empty dynamics dictionary
+    dynamics = {}
+    
+    # Populate dynamics dictionary
+    for i in range(1,5):
+        for j in range(1,5):
+            dist_dict = copy.deepcopy(base_dist_dict)
+            
+            for action in action_list:
+                
+                # Initialize temp spaces list
+                temp_spaces = []
+                
+                # Populate temp space list
+                for displacement in action_stochasticity[action]:
+                    new_space = (i + displacement[0], j + displacement[1])
+                    new_prob = action_stochasticity[action][displacement]
+                    new_term = False
+                    new_reward = 0.
+                    if new_space in state_characteristics:
+                        if state_characteristics[new_space] in ["Hole", "Goal"]:
+                            new_term = True
+                        if state_characteristics[new_space] in ["Goal"]:
+                            new_reward = 1.
+                                        
+                    temp_spaces.append([new_prob, new_space, new_reward, new_term])
+                
+                # Add non-legal space results to the base result of staying in place
+                for temp_space in temp_spaces:
+                    if temp_space[1][0] < 1 or temp_space[1][0] > 4 or temp_space[1][1] < 1 or temp_space[1][1] > 4:
+                        for temp_space_bleh in temp_spaces:
+                            if temp_space_bleh[1] == (i,j):
+                                temp_space_bleh[0] += temp_space[0]
+                
+                # Remove zero probability and non-legal space
+                temp_spaces_new = []
+                for temp_space in temp_spaces:
+                    if temp_space[0] <= 0.0 or temp_space[1][0] < 1 or temp_space[1][0] > 4 or temp_space[1][1] < 1 or temp_space[1][1] > 4:
+                        pass
+                    else:
+                        temp_spaces_new.append(tuple(temp_space))
+                
+                
+                dist_dict[action] = copy.deepcopy(temp_spaces_new)
+                
+            dynamics[(i,j)] = dist_dict
 
-# P = P_BW()
-# P = gym.make('BanditWalk-v0').env.P
-pass
+    return dynamics
+
+
+def show_dynamics_dictionary(P_dict):
+    
+    for state in my_dict:
+        print("\n\n-----------------------------------\n")
+        print(state)
+        for action in my_dict[state]:
+            print("\n", action)
+            print(my_dict[state][action])
+    
+    return 
+    
+
+my_dict = P_FL_custom()
+show_dynamics_dictionary(my_dict)
