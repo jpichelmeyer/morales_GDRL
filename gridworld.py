@@ -19,6 +19,7 @@ class GW:
         self.width = width
         self.fwd_stochasticity = fwd_stochasticity
         self.orth_stochasticity = (1.-self.fwd_stochasticity)/2
+        self.back_stochasticity = 1.-self.fwd_stochasticity
         self.start_state = start_state
         self.terminal_states = terminal_states
         self.reward_default = reward_default
@@ -70,6 +71,32 @@ class GW:
                 action_result["down"]   : self.orth_stochasticity,
                 },
             }
+        if self.height < 2:
+            action_stochasticity = {
+                "left" : {
+                    action_result["stay"] : 0.,
+                    action_result["left"] : self.fwd_stochasticity,
+                    action_result["right"] : self.back_stochasticity,
+                    },
+                "right" : {
+                    action_result["stay"] : 0.,
+                    action_result["right"] : self.fwd_stochasticity,
+                    action_result["left"] : self.back_stochasticity,
+                    }
+                }
+        if self.width < 2:
+            action_stochasticity = {
+                "up" : {
+                    action_result["stay"] : 0.,
+                    action_result["up"] : self.fwd_stochasticity,
+                    action_result["down"] : self.back_stochasticity,
+                    },
+                "down" : {
+                    action_result["stay"] : 0.,
+                    action_result["up"] : self.fwd_stochasticity,
+                    action_result["down"] : self.back_stochasticity,
+                    }
+                }
         
         # Generate base action dictionary
         base_dist_dict = {}
